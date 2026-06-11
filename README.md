@@ -42,7 +42,7 @@
    git clone https://github.com/BlackPencil-69/Steganography-Tool.git
    ```
 
-2. Відкрийте файл `steganography_tool.html` у будь-якому браузері (подвійним кліком).
+2. Відкрийте файл `index.html` у будь-якому браузері (подвійним кліком).
 
 ---
 
