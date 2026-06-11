@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Інструмент стеганографії</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+  <style>
+    /* Сучасна темна тема та змінні */
+    :root {
+      --color-background-root: #0f172a;
+      --color-background-primary: #1e293b;
+      --color-background-secondary: #334155;
+      --color-background-tertiary: #475569;
+      
+      --color-text-primary: #f8fafc;
+      --color-text-secondary: #94a3b8;
+      
+      --color-border-primary: #64748b;
+      --color-border-secondary: #475569;
+      --color-border-tertiary: #334155;
+      
+      --color-accent: #6366f1;
+      --color-accent-hover: #4f46e5;
+      --color-accent-text: #ffffff;
+
+      --color-background-success: rgba(34, 197, 94, 0.15);
+      --color-text-success: #4ade80;
+      --color-background-danger: rgba(239, 68, 68, 0.15);
+      --color-text-danger: #f87171;
+      --color-background-info: rgba(56, 189, 248, 0.15);
+      --color-text-info: #7dd3fc;
+      
+      --border-radius-md: 10px;
+      --border-radius-lg: 16px;
+      
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Fira Code', 'Courier New', monospace;
+    }
+
+    /* Загальні стилі та скидання */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background-color: var(--color-background-root);
+      color: var(--color-text-primary);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    .app-container {
+      background-color: var(--color-background-primary);
+      width: 100%;
+      max-width: 600px;
+      padding: 2rem;
+      border-radius: var(--border-radius-lg);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--color-border-tertiary);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+    
+    .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 2px solid var(--color-border-tertiary); }
+    .tab { flex: 1; padding: 12px 20px; font-size: 15px; cursor: pointer; background: none; border: none; border-bottom: 2px solid transparent; color: var(--color-text-secondary); font-family: var(--font-sans); transition: all 0.2s ease; margin-bottom: -2px; }
+    .tab.active { color: var(--color-accent); border-bottom-color: var(--color-accent); font-weight: 600; }
+    .tab:hover:not(.active) { color: var(--color-text-primary); }
+    
+    .panel { display: none; animation: fadeIn 0.3s ease; } 
+    .panel.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .drop-zone {
+      border: 2px dashed var(--color-border-secondary);
+      border-radius: var(--border-radius-lg);
+      padding: 2.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      background: var(--color-background-secondary);
+      transition: all 0.2s ease;
+      margin-bottom: 1.5rem;
+    }
+    .drop-zone:hover, .drop-zone.drag { background: var(--color-background-tertiary); border-color: var(--color-border-primary); }
+    .drop-zone i { font-size: 42px; color: var(--color-accent); display: block; margin-bottom: 12px; }
+    .drop-zone p { margin: 0; font-size: 14px; color: var(--color-text-secondary); }
+    .drop-zone .fname { font-size: 15px; font-weight: 600; color: var(--color-text-primary); }
+    
+    .col { flex: 1; }
+    label { display: block; font-size: 14px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 8px; }
+    textarea { width: 100%; resize: vertical; min-height: 120px; font-family: var(--font-mono); font-size: 14px; padding: 12px; border-radius: var(--border-radius-md); background: var(--color-background-root); color: var(--color-text-primary); border: 1px solid var(--color-border-secondary); transition: border-color 0.2s; }
+    textarea:focus { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
+    
+    .btn { display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 10px 18px; border-radius: var(--border-radius-md); font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); font-family: var(--font-sans); transition: all 0.2s ease; }
+    .btn:hover { background: var(--color-background-tertiary); border-color: var(--color-border-primary); }
+    .btn:active { transform: scale(0.97); }
+    
+    .btn-primary { background: var(--color-accent); color: var(--color-accent-text); border-color: transparent; }
+    .btn-primary:hover { background: var(--color-accent-hover); }
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+    
+    .status { padding: 12px 16px; border-radius: var(--border-radius-md); font-size: 14px; margin-top: 1rem; display: none; font-weight: 500; }
+    .status.ok { display: block; background: var(--color-background-success); color: var(--color-text-success); border: 1px solid var(--color-text-success); }
+    .status.err { display: block; background: var(--color-background-danger); color: var(--color-text-danger); border: 1px solid var(--color-text-danger); }
+    .status.info { display: block; background: var(--color-background-info); color: var(--color-text-info); border: 1px solid var(--color-text-info); }
+    
+    .preview { max-width: 100%; max-height: 250px; border-radius: var(--border-radius-md); border: 1px solid var(--color-border-tertiary); display: block; margin: 0 auto 8px auto; object-fit: contain; }
+    .capacity { font-size: 13px; color: var(--color-text-secondary); margin-top: 8px; text-align: center; font-weight: 500; }
+    
+    .progress-bar { height: 6px; background: var(--color-background-root); border-radius: 3px; margin: 12px 0; overflow: hidden; border: 1px solid var(--color-border-tertiary); }
+    .progress-fill { height: 100%; background: var(--color-accent); border-radius: 3px; width: 0%; transition: width 0.2s ease; }
+    
+    .file-row { display: flex; gap: 12px; align-items: center; padding: 10px 14px; background: var(--color-background-root); border-radius: var(--border-radius-md); border: 1px solid var(--color-border-secondary); margin-bottom: 12px; }
+    .file-row i { font-size: 20px; color: var(--color-accent); }
+    .file-row .fname { flex: 1; font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-row .fsize { font-size: 12px; color: var(--color-text-secondary); }
+    
+    .divider { display: flex; align-items: center; gap: 12px; margin: 1.5rem 0; color: var(--color-text-secondary); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--color-border-secondary); }
+    
+    input[type=file], canvas { display: none; }
+    
+    .output-section { margin-top: 1.5rem; }
+    .extracted-box { background: var(--color-background-root); border-radius: var(--border-radius-md); border: 1px solid var(--color-border-secondary); padding: 16px; font-family: var(--font-mono); font-size: 14px; white-space: pre-wrap; word-break: break-all; max-height: 250px; overflow-y: auto; color: var(--color-text-primary); margin-bottom: 12px; }
+    
+    .actions-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .info-note { font-size: 13px; color: var(--color-text-secondary); display: flex; gap: 8px; align-items: center; margin-top: 12px; background: var(--color-background-secondary); padding: 10px; border-radius: var(--border-radius-md); }
+    .info-note i { color: var(--color-text-info); }
+    
+    .btn-group { display: flex; gap: 12px; margin-top: 1.5rem; flex-wrap: wrap; }
+    .btn-group .btn { flex: 1; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <h1><i class="ti ti-eye-off"></i> Стеганографія</h1>
+  <h2 class="sr-only">Інструмент стеганографії — вбудовування тексту у зображення</h2>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('encode')"><i class="ti ti-lock" aria-hidden="true"></i> Зашифрувати</button>
+    <button class="tab" onclick="switchTab('decode')"><i class="ti ti-lock-open" aria-hidden="true"></i> Розшифрувати</button>
+  </div>
+
+  <div id="panel-encode" class="panel active">
+    <div class="drop-zone" id="dz-encode" onclick="document.getElementById('img-input-encode').click()" ondragover="dzDrag(event,'dz-encode')" ondragleave="dzLeave('dz-encode')" ondrop="dzDrop(event,'dz-encode',loadEncodeImage)">
+      <i class="ti ti-photo-plus" aria-hidden="true"></i>
+      <p id="dz-encode-label">Перетягніть зображення або <strong>натисніть для вибору</strong></p>
+      <p style="margin-top: 4px; font-size: 12px; opacity: 0.7;">PNG, JPEG, BMP, WebP</p>
+    </div>
+    <input type="file" id="img-input-encode" accept="image/*" onchange="loadEncodeImage(this.files[0])">
+    <img id="preview-encode" class="preview" style="display:none" alt="Попередній перегляд">
+    <p id="cap-encode" class="capacity" style="display:none"></p>
+
+    <div class="divider">Текст для вбудовування</div>
+
+    <div class="col">
+      <textarea id="text-input" placeholder="Введіть таємне повідомлення тут..." oninput="updateCapacity()"></textarea>
+    </div>
+
+    <div class="divider">або текстовий файл</div>
+
+    <div class="file-row" id="txt-file-row" style="display:none">
+      <i class="ti ti-file-text" aria-hidden="true"></i>
+      <span class="fname" id="txt-file-name"></span>
+      <span class="fsize" id="txt-file-size"></span>
+      <button class="btn btn-sm" onclick="clearTxtFile()" title="Очистити"><i class="ti ti-x" aria-hidden="true"></i></button>
+    </div>
+
+    <button class="btn btn-sm" style="width: 100%;" onclick="document.getElementById('txt-input').click()">
+      <i class="ti ti-upload" aria-hidden="true"></i> Завантажити .txt файл замість тексту
+    </button>
+    <input type="file" id="txt-input" accept=".txt,.md,.csv,.json,.log" onchange="loadTxtFile(this.files[0])">
+
+    <div id="progress-encode" class="progress-bar" style="display:none"><div class="progress-fill" id="pf-encode"></div></div>
+    <div id="status-encode" class="status"></div>
+
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="doEncode()">
+        <i class="ti ti-lock" aria-hidden="true"></i> Зашифрувати
+      </button>
+      <button class="btn" id="btn-save-encode" style="display:none" onclick="saveEncoded()">
+        <i class="ti ti-download" aria-hidden="true"></i> Зберегти PNG
+      </button>
+    </div>
+    
+    <div class="info-note">
+      <i class="ti ti-info-circle" aria-hidden="true"></i> 
+      <span>Вихідний файл завжди зберігається у форматі PNG (без втрат), щоб уникнути пошкодження прихованих даних.</span>
+    </div>
+  </div>
+
+  <div id="panel-decode" class="panel">
+    <div class="drop-zone" id="dz-decode" onclick="document.getElementById('img-input-decode').click()" ondragover="dzDrag(event,'dz-decode')" ondragleave="dzLeave('dz-decode')" ondrop="dzDrop(event,'dz-decode',loadDecodeImage)">
+      <i class="ti ti-photo-search" aria-hidden="true"></i>
+      <p id="dz-decode-label">Перетягніть зображення або <strong>натисніть</strong></p>
+      <p style="margin-top: 4px; font-size: 12px; opacity: 0.7;">Тільки PNG (без компресії)</p>
+    </div>
+    <input type="file" id="img-input-decode" accept="image/*" onchange="loadDecodeImage(this.files[0])">
+    <img id="preview-decode" class="preview" style="display:none" alt="Попередній перегляд">
+
+    <div id="progress-decode" class="progress-bar" style="display:none"><div class="progress-fill" id="pf-decode"></div></div>
+    <div id="status-decode" class="status"></div>
+
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="doDecode()" style="width: 100%;">
+        <i class="ti ti-lock-open" aria-hidden="true"></i> Витягнути текст
+      </button>
+    </div>
+
+    <div class="output-section" id="decode-output" style="display:none">
+      <label>Розшифрований текст:</label>
+      <div class="extracted-box" id="extracted-text"></div>
+      <div class="actions-row">
+        <button class="btn btn-sm" onclick="copyExtracted()"><i class="ti ti-copy" aria-hidden="true"></i> Копіювати</button>
+        <button class="btn btn-sm" onclick="saveExtracted()"><i class="ti ti-download" aria-hidden="true"></i> Зберегти як .txt</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<canvas id="work-canvas"></canvas>
+
+<script>
+const MAGIC = '\u{1F512}STEG\u{1F512}';
+const SEP = '\u0000\u0001\u0002';
+
+let encodeImageData = null;
+let decodeImageData = null;
+let encodeCanvas = null;
+let txtFileContent = null;
+let encodedBlob = null;
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function dzDrag(e, id) { e.preventDefault(); document.getElementById(id).classList.add('drag'); }
+function dzLeave(id) { document.getElementById(id).classList.remove('drag'); }
+function dzDrop(e, id, fn) {
+  e.preventDefault();
+  document.getElementById(id).classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f) fn(f);
+}
+
+function loadEncodeImage(file) {
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const c = document.getElementById('work-canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    encodeImageData = ctx.getImageData(0, 0, c.width, c.height);
+    encodeCanvas = c;
+    const maxBytes = Math.floor((encodeImageData.data.length / 4) * 3 / 8) - 64;
+    document.getElementById('preview-encode').src = url;
+    document.getElementById('preview-encode').style.display = 'block';
+    document.getElementById('cap-encode').style.display = 'block';
+    document.getElementById('dz-encode-label').innerHTML = '<span class="fname">' + file.name + '</span>';
+    updateCapacity(maxBytes);
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
+function loadDecodeImage(file) {
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    decodeImageData = ctx.getImageData(0, 0, c.width, c.height);
+    document.getElementById('preview-decode').src = url;
+    document.getElementById('preview-decode').style.display = 'block';
+    document.getElementById('dz-decode-label').innerHTML = '<span class="fname">' + file.name + '</span>';
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
+function updateCapacity(maxBytes) {
+  const el = document.getElementById('cap-encode');
+  if (!encodeImageData) return;
+  const max = maxBytes || Math.floor((encodeImageData.data.length / 4) * 3 / 8) - 64;
+  const text = getEncodeText();
+  const used = new TextEncoder().encode(text).length;
+  const pct = Math.min(100, Math.round(used / max * 100));
+  el.textContent = 'Використано місця: ' + used + ' / ' + max + ' байт (' + pct + '%)';
+  el.style.color = pct > 90 ? 'var(--color-text-danger)' : 'var(--color-text-secondary)';
+}
+
+function getEncodeText() {
+  if (txtFileContent !== null) return txtFileContent;
+  return document.getElementById('text-input').value;
+}
+
+function loadTxtFile(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    txtFileContent = e.target.result;
+    document.getElementById('txt-file-row').style.display = 'flex';
+    document.getElementById('txt-file-name').textContent = file.name;
+    document.getElementById('txt-file-size').textContent = formatBytes(file.size);
+    document.getElementById('text-input').value = '';
+    document.getElementById('text-input').placeholder = 'Файл завантажено — текст буде взято з нього';
+    document.getElementById('text-input').disabled = true;
+    updateCapacity();
+  };
+  r.readAsText(file, 'utf-8');
+}
+
+function clearTxtFile() {
+  txtFileContent = null;
+  document.getElementById('txt-file-row').style.display = 'none';
+  document.getElementById('text-input').disabled = false;
+  document.getElementById('text-input').placeholder = 'Введіть таємне повідомлення тут...';
+  document.getElementById('txt-input').value = '';
+  updateCapacity();
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' Б';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' КБ';
+  return (b/1048576).toFixed(2) + ' МБ';
+}
+
+function setBit(byteVal, bit) { return (byteVal & 0xFE) | bit; }
+
+function textToLSB(pixels, text) {
+  const encoder = new TextEncoder();
+  const payload = MAGIC + text + SEP;
+  const bytes = encoder.encode(payload);
+  const lenBuf = new Uint8Array(4);
+  new DataView(lenBuf.buffer).setUint32(0, bytes.length, false);
+  const allBytes = new Uint8Array(4 + bytes.length);
+  allBytes.set(lenBuf, 0);
+  allBytes.set(bytes, 4);
+
+  const maxChannels = Math.floor(pixels.length / 4) * 3;
+  if (allBytes.length * 8 > maxChannels) return false;
+
+  let bitIdx = 0;
+  for (let i = 0; i < pixels.length; i += 4) {
+    for (let c = 0; c < 3; c++) {
+      const byteI = Math.floor(bitIdx / 8);
+      const bitInByte = 7 - (bitIdx % 8);
+      if (byteI >= allBytes.length) return true;
+      const bit = (allBytes[byteI] >> bitInByte) & 1;
+      pixels[i + c] = setBit(pixels[i + c], bit);
+      bitIdx++;
+    }
+  }
+  return true;
+}
+
+function LSBToText(pixels) {
+  let bits = [];
+  for (let i = 0; i < pixels.length; i += 4) {
+    for (let c = 0; c < 3; c++) {
+      bits.push(pixels[i + c] & 1);
+      if (bits.length >= 32) break;
+    }
+    if (bits.length >= 32) break;
+  }
+  const lenBytes = new Uint8Array(4);
+  for (let b = 0; b < 4; b++) {
+    let v = 0;
+    for (let k = 0; k < 8; k++) v = (v << 1) | bits[b * 8 + k];
+    lenBytes[b] = v;
+  }
+  const payloadLen = new DataView(lenBytes.buffer).getUint32(0, false);
+  if (payloadLen === 0 || payloadLen > 10000000) return null;
+
+  const totalBits = (4 + payloadLen) * 8;
+  const allBits = [];
+  let bitIdx = 0;
+  for (let i = 0; i < pixels.length && bitIdx < totalBits; i += 4) {
+    for (let c = 0; c < 3 && bitIdx < totalBits; c++) {
+      allBits.push(pixels[i + c] & 1);
+      bitIdx++;
+    }
+  }
+
+  const payloadBytes = new Uint8Array(payloadLen);
+  for (let b = 0; b < payloadLen; b++) {
+    let v = 0;
+    for (let k = 0; k < 8; k++) v = (v << 1) | allBits[32 + b * 8 + k];
+    payloadBytes[b] = v;
+  }
+
+  const decoder = new TextDecoder('utf-8');
+  const full = decoder.decode(payloadBytes);
+  if (!full.startsWith(MAGIC)) return null;
+  const content = full.slice(MAGIC.length);
+  const sepIdx = content.indexOf(SEP);
+  return sepIdx === -1 ? content : content.slice(0, sepIdx);
+}
+
+function showStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = 'status ' + type;
+  el.textContent = msg;
+}
+
+function doEncode() {
+  if (!encodeImageData) { showStatus('status-encode','err','Спочатку завантажте зображення'); return; }
+  const text = getEncodeText();
+  if (!text.trim()) { showStatus('status-encode','err','Введіть текст або завантажте файл'); return; }
+
+  showStatus('status-encode','info','Обробка зображення...');
+  document.getElementById('progress-encode').style.display = 'block';
+  document.getElementById('pf-encode').style.width = '30%';
+
+  setTimeout(() => {
+    const imgData = new ImageData(new Uint8ClampedArray(encodeImageData.data), encodeImageData.width, encodeImageData.height);
+    const ok = textToLSB(imgData.data, text);
+    document.getElementById('pf-encode').style.width = '80%';
+
+    if (!ok) { showStatus('status-encode','err','Зображення занадто мале для цього тексту'); document.getElementById('progress-encode').style.display='none'; return; }
+
+    const c = document.getElementById('work-canvas');
+    c.width = encodeImageData.width; c.height = encodeImageData.height;
+    c.getContext('2d').putImageData(imgData, 0, 0);
+
+    document.getElementById('pf-encode').style.width = '100%';
+
+    c.toBlob(blob => {
+      encodedBlob = blob;
+      document.getElementById('btn-save-encode').style.display = 'inline-flex';
+      showStatus('status-encode','ok','✓ Текст успішно вбудовано. Натисніть "Зберегти PNG".');
+      setTimeout(() => { document.getElementById('progress-encode').style.display='none'; document.getElementById('pf-encode').style.width='0%'; }, 600);
+    }, 'image/png');
+  }, 50);
+}
+
+function saveEncoded() {
+  if (!encodedBlob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(encodedBlob);
+  a.download = 'steg_encoded.png';
+  a.click();
+}
+
+function doDecode() {
+  if (!decodeImageData) { showStatus('status-decode','err','Спочатку завантажте зображення'); return; }
+
+  showStatus('status-decode','info','Зчитування пікселів...');
+  document.getElementById('progress-decode').style.display = 'block';
+  document.getElementById('pf-decode').style.width = '60%';
+
+  setTimeout(() => {
+    const result = LSBToText(decodeImageData.data);
+    document.getElementById('pf-decode').style.width = '100%';
+
+    if (result === null) {
+      showStatus('status-decode','err','У цьому зображенні не знайдено прихованого тексту (або воно було стиснуте після кодування)');
+      document.getElementById('decode-output').style.display = 'none';
+    } else {
+      showStatus('status-decode','ok','✓ Текст успішно витягнуто (' + new TextEncoder().encode(result).length + ' байт)');
+      document.getElementById('extracted-text').textContent = result;
+      document.getElementById('decode-output').style.display = 'block';
+    }
+    setTimeout(() => { document.getElementById('progress-decode').style.display='none'; document.getElementById('pf-decode').style.width='0%'; }, 600);
+  }, 50);
+}
+
+function copyExtracted() {
+  const t = document.getElementById('extracted-text').textContent;
+  navigator.clipboard.writeText(t).then(() => {
+    const btn = event.currentTarget;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> Скопійовано';
+    setTimeout(() => { btn.innerHTML = orig; }, 1500);
+  });
+}
+
+function saveExtracted() {
+  const t = document.getElementById('extracted-text').textContent;
+  const blob = new Blob([t], {type: 'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'extracted_text.txt';
+  a.click();
+}
+</script>
+
+</body>
+</html>
